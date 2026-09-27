@@ -1,4 +1,4 @@
-import { cloneScenario, summarizeScenario, validateDevice, validateScenarioSettings } from './domain';
+import { cloneScenario, defaultCustomRange, summarizeScenario, validateDevice, validateScenarioSettings } from './domain';
 import { findScenario, type EnergyRepository } from './repository';
 import type { EnergyDevice, EnergyDocument, EnergyScenario, Notice, ViewStatus } from './types';
 
@@ -71,16 +71,24 @@ export class EnergyLensViewModel {
     this.commit((current) => ({ ...current, devices: current.devices.filter((item) => item.id !== deviceId) }), '设备已移除');
   }
 
-  updateSettings(patch: Partial<Pick<EnergyScenario, 'name' | 'pricePerKwh' | 'daysPerMonth'>>): void {
+  updateSettings(patch: Partial<Pick<EnergyScenario, 'name' | 'pricePerKwh' | 'daysPerMonth' | 'cycle' | 'customRange'>>): void {
     const scenario = this.activeScenario;
     if (!scenario) return;
     const next = { ...scenario, ...patch };
-    const error = validateScenarioSettings(next.pricePerKwh, next.daysPerMonth);
+    if (next.cycle === 'custom' && !next.customRange) next.customRange = defaultCustomRange();
+    const error = validateScenarioSettings(next);
     if (error) {
       this.setNotice({ kind: 'error', text: error });
       return;
     }
-    this.commit((current) => ({ ...current, name: next.name.trim() || '未命名方案', pricePerKwh: next.pricePerKwh, daysPerMonth: next.daysPerMonth }), '计费参数已更新');
+    this.commit((current) => ({
+      ...current,
+      name: next.name.trim() || '未命名方案',
+      pricePerKwh: next.pricePerKwh,
+      daysPerMonth: next.daysPerMonth,
+      cycle: next.cycle,
+      customRange: next.customRange,
+    }), '计费参数已更新');
   }
 
   duplicateActive(): void {

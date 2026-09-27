@@ -40,9 +40,20 @@ function isScenario(value: unknown): value is EnergyDocument['scenarios'][number
     && typeof scenario.daysPerMonth === 'number'
     && scenario.daysPerMonth >= 1
     && scenario.daysPerMonth <= 31
+    && (scenario.cycle === undefined || ['month', 'quarter', 'year', 'custom'].includes(scenario.cycle))
+    && (scenario.customRange === undefined || isCustomRange(scenario.customRange))
     && Array.isArray(scenario.devices)
     && scenario.devices.length > 0
     && scenario.devices.every(isDevice);
+}
+
+function isCustomRange(value: unknown): value is { start: string; end: string } {
+  if (!value || typeof value !== 'object') return false;
+  const range = value as Partial<{ start: string; end: string }>;
+  return typeof range.start === 'string'
+    && typeof range.end === 'string'
+    && Number.isFinite(Date.parse(`${range.start}T00:00:00Z`))
+    && Number.isFinite(Date.parse(`${range.end}T00:00:00Z`));
 }
 
 function isDevice(value: unknown): value is EnergyDocument['scenarios'][number]['devices'][number] {

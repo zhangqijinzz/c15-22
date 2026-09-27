@@ -5,11 +5,20 @@ export interface EnergyDevice {
   dailyHours: number;
 }
 
+export type BillingCycle = 'month' | 'quarter' | 'year' | 'custom';
+
+export interface CustomRange {
+  start: string;
+  end: string;
+}
+
 export interface EnergyScenario {
   id: string;
   name: string;
   pricePerKwh: number;
   daysPerMonth: number;
+  cycle?: BillingCycle;
+  customRange?: CustomRange;
   devices: EnergyDevice[];
   createdAt: string;
 }
@@ -29,11 +38,13 @@ export interface Notice {
 
 export interface EnergyEstimate {
   dailyKwh: number;
-  monthlyKwh: number;
-  monthlyCost: number;
+  periodKwh: number;
+  periodCost: number;
 }
 
 export interface ScenarioSummary {
+  cycle: BillingCycle;
+  periodDays: number;
   total: EnergyEstimate;
   devices: Array<EnergyDevice & EnergyEstimate & { share: number }>;
 }

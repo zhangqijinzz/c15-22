@@ -16,9 +16,9 @@ describe('EnergyLensViewModel', () => {
 
   it('initializes, persists edits, and recalculates results', () => {
     expect(vm.getState().status).toBe('ready');
-    const before = vm.activeSummary?.total.monthlyKwh;
+    const before = vm.activeSummary?.total.periodKwh;
     vm.updateDevice('device-aircon', { dailyHours: 2 });
-    expect(vm.activeSummary?.total.monthlyKwh).toBeLessThan(before ?? Infinity);
+    expect(vm.activeSummary?.total.periodKwh).toBeLessThan(before ?? Infinity);
     expect(repository.save).toHaveBeenCalled();
   });
 
@@ -42,5 +42,24 @@ describe('EnergyLensViewModel', () => {
     vm.addDevice();
     expect(vm.getState().status).toBe('error');
     expect(vm.getState().notice?.text).toContain('保存失败');
+  });
+
+  it('switches billing cycle without touching device parameters', () => {
+    const devicesBefore = structuredClone(vm.activeScenario?.devices);
+    const monthlyKwh = vm.activeSummary?.total.periodKwh ?? 0;
+    vm.updateSettings({ cycle: 'year' });
+    expect(vm.activeScenario?.devices).toEqual(devicesBefore);
+    expect(vm.activeSummary?.total.periodKwh).toBeCloseTo(monthlyKwh * 12);
+    vm.updateSettings({ cycle: 'month' });
+    expect(vm.activeSummary?.total.periodKwh).toBeCloseTo(monthlyKwh);
+  });
+
+  it('fills a default custom range when switching to a custom cycle', () => {
+    vm.updateSettings({ cycle: 'custom' });
+    expect(vm.activeScenario?.customRange).toBeDefined();
+    expect(vm.getState().notice?.kind).toBe('success');
+    vm.updateSettings({ customRange: { start: '2026-06-01', end: '2026-05-01' } });
+    expect(vm.getState().status).toBe('error');
+    expect(vm.activeScenario?.customRange?.end).not.toBe('2026-05-01');
   });
 });
