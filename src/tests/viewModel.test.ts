@@ -16,9 +16,9 @@ describe('EnergyLensViewModel', () => {
 
   it('initializes, persists edits, and recalculates results', () => {
     expect(vm.getState().status).toBe('ready');
-    const before = vm.activeSummary?.total.monthlyKwh;
+    const before = vm.activeSummary?.total.periodKwh;
     vm.updateDevice('device-aircon', { dailyHours: 2 });
-    expect(vm.activeSummary?.total.monthlyKwh).toBeLessThan(before ?? Infinity);
+    expect(vm.activeSummary?.total.periodKwh).toBeLessThan(before ?? Infinity);
     expect(repository.save).toHaveBeenCalled();
   });
 
@@ -42,5 +42,32 @@ describe('EnergyLensViewModel', () => {
     vm.addDevice();
     expect(vm.getState().status).toBe('error');
     expect(vm.getState().notice?.text).toContain('保存失败');
+  });
+
+  it('rescales results when switching period without touching device parameters', () => {
+    const monthlyKwh = vm.activeSummary?.total.periodKwh;
+    const devicesBefore = structuredClone(vm.activeScenario?.devices);
+    vm.updateSettings({ period: { kind: 'year' } });
+    expect(vm.activeSummary?.total.periodKwh).toBeCloseTo((monthlyKwh ?? 0) * 12);
+    expect(vm.activeScenario?.devices).toEqual(devicesBefore);
+    expect(vm.activeScenario?.daysPerMonth).toBe(30);
+  });
+
+  it('rejects a custom range whose end is before its start', () => {
+    vm.updateSettings({ period: { kind: 'custom', startDate: '2026-03-01', endDate: '2026-01-01' } });
+    expect(vm.getState().status).toBe('error');
+    expect(vm.getState().notice?.text).toBe('结束日期不能早于开始日期');
+    expect(vm.activeScenario?.period).toBeUndefined();
+    expect(vm.activeSummary?.total.periodKwh).toBeCloseTo(262.8);
+  });
+
+  it('keeps legacy scenarios comparable after duplication but flags mismatched periods', () => {
+    vm.duplicateActive();
+    vm.updateSettings({ period: { kind: 'quarter' } });
+    const document = vm.getState().document;
+    expect(document?.scenarios).toHaveLength(2);
+    const [original, copy] = document!.scenarios;
+    expect(copy.period?.kind).toBe('quarter');
+    expect(original.period).toBeUndefined();
   });
 });

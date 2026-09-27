@@ -5,11 +5,23 @@ export interface EnergyDevice {
   dailyHours: number;
 }
 
+export type BillingPeriodKind = 'month' | 'quarter' | 'year' | 'custom';
+
+export interface BillingPeriod {
+  kind: BillingPeriodKind;
+  /** 自定义区间的起始日期，格式 YYYY-MM-DD，仅 kind 为 custom 时使用 */
+  startDate?: string;
+  /** 自定义区间的结束日期，格式 YYYY-MM-DD，仅 kind 为 custom 时使用 */
+  endDate?: string;
+}
+
 export interface EnergyScenario {
   id: string;
   name: string;
   pricePerKwh: number;
   daysPerMonth: number;
+  /** 计费周期；缺省视为按月（兼容只带 daysPerMonth 的旧方案） */
+  period?: BillingPeriod;
   devices: EnergyDevice[];
   createdAt: string;
 }
@@ -29,8 +41,8 @@ export interface Notice {
 
 export interface EnergyEstimate {
   dailyKwh: number;
-  monthlyKwh: number;
-  monthlyCost: number;
+  periodKwh: number;
+  periodCost: number;
 }
 
 export interface ScenarioSummary {

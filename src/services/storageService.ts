@@ -40,9 +40,19 @@ function isScenario(value: unknown): value is EnergyDocument['scenarios'][number
     && typeof scenario.daysPerMonth === 'number'
     && scenario.daysPerMonth >= 1
     && scenario.daysPerMonth <= 31
+    && isPeriod(scenario.period)
     && Array.isArray(scenario.devices)
     && scenario.devices.length > 0
     && scenario.devices.every(isDevice);
+}
+
+function isPeriod(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!value || typeof value !== 'object') return false;
+  const period = value as { kind?: unknown; startDate?: unknown; endDate?: unknown };
+  if (period.kind === 'month' || period.kind === 'quarter' || period.kind === 'year') return true;
+  if (period.kind === 'custom') return typeof period.startDate === 'string' && typeof period.endDate === 'string';
+  return false;
 }
 
 function isDevice(value: unknown): value is EnergyDocument['scenarios'][number]['devices'][number] {
